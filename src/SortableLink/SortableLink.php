@@ -125,12 +125,11 @@ class SortableLink
      */
     private static function determineDirection($sortColumn, $sortParameter): array {
         $icon = self::selectIcon($sortColumn);
-        $found = false;
         if(request()->has('sort')) {
             $sorts = explode(",", request()->get("sort"));
             foreach ($sorts as $sort) {
                 if(str_replace("-", "", $sort) === $sortParameter) {
-                    $direction = !str_starts_with("-", $sort);
+                    $direction = !str_starts_with($sort, "-");
                     $icon .= ($direction ? config('sortablelink.asc_suffix', '-asc') : config('sortablelink.desc_suffix', '-desc'));
                     return [$icon, $direction];
                 }
@@ -261,7 +260,7 @@ class SortableLink
                     $finalSorts[] = "-" . $sortParameter;
                 }
                 // sort already has desc, unset
-                else if($sorts === "-" . $sortParameter) {
+                else if($sort === "-" . $sortParameter) {
                     $found = true;
                 }
                 // not this sort column

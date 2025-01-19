@@ -1,6 +1,6 @@
 {
     "name": "proferabg/sortable-link",
-    "description": "Package for handling column sorting in Laravel 6.x",
+    "description": "Package for handling column sorting links for laravel-query-builder",
     "version": "0.1",
     "keywords": [
         "sortable",
