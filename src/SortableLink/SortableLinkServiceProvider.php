@@ -1,15 +1,11 @@
 <?php
 
-namespace Kyslik\ColumnSortable;
+namespace proferabg\SortableLink;
 
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 
-/**
- * Class ColumnSortableServiceProvider
- * @package Kyslik\ColumnSortable
- */
-class ColumnSortableServiceProvider extends ServiceProvider
+class SortableLinkServiceProvider extends ServiceProvider
 {
 
     /**
@@ -28,13 +24,13 @@ class ColumnSortableServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->publishes([
-            __DIR__.'/../config/columnsortable.php' => config_path('columnsortable.php'),
+            __DIR__.'/../config/sortablelink.php' => config_path('sortablelink.php'),
         ], 'config');
 
         Blade::directive('sortablelink', function ($expression) {
             $expression = ($expression[0] === '(') ? substr($expression, 1, -1) : $expression;
 
-            return "<?php echo \Kyslik\ColumnSortable\SortableLink::render(array ({$expression}));?>";
+            return "<?php echo \proferabg\SortableLink\SortableLink::render(array ({$expression}));?>";
         });
 
         request()->macro('allFilled', function (array $keys) {
@@ -56,6 +52,6 @@ class ColumnSortableServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/columnsortable.php', 'columnsortable');
+        $this->mergeConfigFrom(__DIR__.'/../config/sortablelink.php', 'sortablelink');
     }
 }

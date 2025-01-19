@@ -1,10 +1,10 @@
 <?php
 
-namespace Kyslik\ColumnSortable\Exceptions;
+namespace proferabg\SortableLink\Exceptions;
 
 use Exception;
 
-class ColumnSortableException extends Exception
+class SortableLinkException extends Exception
 {
 
     public function __construct($message = '', $code = 0, Exception $previous = null)

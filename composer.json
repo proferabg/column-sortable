@@ -1,5 +1,5 @@
 {
-    "name": "kyslik/column-sortable",
+    "name": "proferabg/sortable-link",
     "description": "Package for handling column sorting in Laravel 6.x",
     "keywords": [
         "sortable",
@@ -12,8 +12,8 @@
     "type": "package",
     "authors": [
         {
-            "name": "Martin Kiesel",
-            "email": "martin.kiesel@gmail.com",
+            "name": "Brenton Profera",
+            "email": "brent@prgm.in",
             "role": "Developer and maintainer"
         }
     ],
@@ -28,13 +28,13 @@
     },
     "autoload": {
         "psr-4": {
-            "Kyslik\\ColumnSortable\\": "src/ColumnSortable/"
+            "proferabg\\SortableLink\\": "src/SortableLink/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "Kyslik\\ColumnSortable\\ColumnSortableServiceProvider"
+                "proferabg\\SortableLink\\SortableLinkServiceProvider"
             ]
         }
     },

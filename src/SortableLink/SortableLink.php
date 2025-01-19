@@ -1,14 +1,15 @@
 <?php
 
-namespace Kyslik\ColumnSortable;
+namespace proferabg\SortableLink;
 
-use Kyslik\ColumnSortable\Exceptions\ColumnSortableException;
+use Exception;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Str;
+use proferabg\SortableLink\Exceptions\SortableLinkException;
 
 /**
  * Class SortableLink
- * @package Kyslik\ColumnSortable
+ * @package proferabg\SortableLink
  */
 class SortableLink
 {
@@ -17,15 +18,14 @@ class SortableLink
      * @param array $parameters
      *
      * @return string
-     * @throws \Kyslik\ColumnSortable\Exceptions\ColumnSortableException
+     * @throws SortableLinkException
      */
-    public static function render(array $parameters)
-    {
+    public static function render(array $parameters): string {
         list($sortColumn, $sortParameter, $title, $queryParameters, $anchorAttributes) = self::parseParameters($parameters);
 
         $title = self::applyFormatting($title, $sortColumn);
 
-        if ($mergeTitleAs = config('columnsortable.inject_title_as', null)) {
+        if ($mergeTitleAs = config('sortablelink.inject_title_as', null)) {
             request()->merge([$mergeTitleAs => $title]);
         }
 
@@ -49,10 +49,9 @@ class SortableLink
      * @param array $parameters
      *
      * @return array
-     * @throws \Kyslik\ColumnSortable\Exceptions\ColumnSortableException
+     * @throws SortableLinkException
      */
-    public static function parseParameters(array $parameters)
-    {
+    public static function parseParameters(array $parameters): array {
         //TODO: let 2nd parameter be both title, or default query parameters
         //TODO: needs some checks before determining $title
         $explodeResult    = self::explodeSortParameter($parameters[0]);
@@ -73,16 +72,15 @@ class SortableLink
      *
      * @return array
      *
-     * @throws \Kyslik\ColumnSortable\Exceptions\ColumnSortableException
+     * @throws SortableLinkException
      */
-    public static function explodeSortParameter($parameter)
-    {
-        $separator = config('columnsortable.uri_relation_column_separator', '.');
+    public static function explodeSortParameter($parameter): array {
+        $separator = config('sortablelink.uri_relation_column_separator', '.');
 
         if (Str::contains($parameter, $separator)) {
             $oneToOneSort = explode($separator, $parameter);
             if (count($oneToOneSort) !== 2) {
-                throw new ColumnSortableException();
+                throw new SortableLinkException();
             }
 
             return $oneToOneSort;
@@ -93,7 +91,7 @@ class SortableLink
 
 
     /**
-     * @param string|\Illuminate\Contracts\Support\Htmlable|null $title
+     * @param string|Htmlable|null $title
      * @param string $sortColumn
      *
      * @return string
@@ -106,11 +104,11 @@ class SortableLink
 
         if ($title === null) {
             $title = $sortColumn;
-        } elseif ( ! config('columnsortable.format_custom_titles', true)){
+        } elseif ( ! config('sortablelink.format_custom_titles', true)){
             return $title;
         }
 
-        $formatting_function = config('columnsortable.formatting_function', null);
+        $formatting_function = config('sortablelink.formatting_function', null);
         if ( ! is_null($formatting_function) && function_exists($formatting_function)) {
             $title = call_user_func($formatting_function, $title);
         }
@@ -125,22 +123,21 @@ class SortableLink
      *
      * @return array
      */
-    private static function determineDirection($sortColumn, $sortParameter)
-    {
+    private static function determineDirection($sortColumn, $sortParameter): array {
         $icon = self::selectIcon($sortColumn);
-
-        if (request()->get('sort') == $sortParameter && in_array(request()->get('direction'), ['asc', 'desc'])) {
-            $icon      .= (request()->get('direction') === 'asc' ? config('columnsortable.asc_suffix', '-asc') :
-                config('columnsortable.desc_suffix', '-desc'));
-            $direction = request()->get('direction') === 'desc' ? 'asc' : 'desc';
-
-            return [$icon, $direction];
-        } else {
-            $icon      = config('columnsortable.sortable_icon');
-            $direction = config('columnsortable.default_direction_unsorted', 'asc');
-
-            return [$icon, $direction];
+        $found = false;
+        if(request()->has('sort')) {
+            $sorts = explode(",", request()->get("sort"));
+            foreach ($sorts as $sort) {
+                if(str_replace("-", "", $sort) === $sortParameter) {
+                    $direction = !str_starts_with("-", $sort);
+                    $icon .= ($direction ? config('sortablelink.asc_suffix', '-asc') : config('sortablelink.desc_suffix', '-desc'));
+                    return [$icon, $direction];
+                }
+            }
         }
+
+        return [config('sortablelink.sortable_icon'), null];
     }
 
 
@@ -149,11 +146,10 @@ class SortableLink
      *
      * @return string
      */
-    private static function selectIcon($sortColumn)
-    {
-        $icon = config('columnsortable.default_icon_set');
+    private static function selectIcon($sortColumn): string {
+        $icon = config('sortablelink.default_icon_set');
 
-        foreach (config('columnsortable.columns', []) as $value) {
+        foreach (config('sortablelink.columns', []) as $value) {
             if (in_array($sortColumn, $value['rows'])) {
                 $icon = $value['class'];
             }
@@ -168,15 +164,14 @@ class SortableLink
      *
      * @return string
      */
-    private static function formTrailingTag($icon)
-    {
-        if ( ! config('columnsortable.enable_icons', true)) {
+    private static function formTrailingTag($icon): string {
+        if ( ! config('sortablelink.enable_icons', true)) {
             return '</a>';
         }
 
-        $iconAndTextSeparator = config('columnsortable.icon_text_separator', '');
+        $iconAndTextSeparator = config('sortablelink.icon_text_separator', '');
 
-        $clickableIcon = config('columnsortable.clickable_icon', false);
+        $clickableIcon = config('sortablelink.clickable_icon', false);
         $trailingTag   = $iconAndTextSeparator.'<i class="'.$icon.'"></i>'.'</a>';
 
         if ($clickableIcon === false) {
@@ -198,24 +193,23 @@ class SortableLink
      *
      * @return string
      */
-    private static function getAnchorClass($sortColumn, &$anchorAttributes = [])
-    {
+    private static function getAnchorClass($sortColumn, &$anchorAttributes = []): string {
         $class = [];
 
-        $anchorClass = config('columnsortable.anchor_class', null);
+        $anchorClass = config('sortablelink.anchor_class', null);
         if ($anchorClass !== null) {
             $class[] = $anchorClass;
         }
 
-        $activeClass = config('columnsortable.active_anchor_class', null);
+        $activeClass = config('sortablelink.active_anchor_class', null);
         if ($activeClass !== null && self::shouldShowActive($sortColumn)) {
             $class[] = $activeClass;
         }
 
-        $directionClassPrefix = config('columnsortable.direction_anchor_class_prefix', null);
+        $directionClassPrefix = config('sortablelink.direction_anchor_class_prefix', null);
         if ($directionClassPrefix !== null && self::shouldShowActive($sortColumn)) {
-            $class[] = $directionClassPrefix.(request()->get('direction') === 'asc' ? config('columnsortable.asc_suffix', '-asc') :
-                    config('columnsortable.desc_suffix', '-desc'));
+            $class[] = $directionClassPrefix.(request()->get('direction') === 'asc' ? config('sortablelink.asc_suffix', '-asc') :
+                    config('sortablelink.desc_suffix', '-desc'));
         }
 
         if (isset($anchorAttributes['class'])) {
@@ -232,9 +226,15 @@ class SortableLink
      *
      * @return boolean
      */
-    private static function shouldShowActive($sortColumn)
-    {
-        return request()->has('sort') && request()->get('sort') == $sortColumn;
+    private static function shouldShowActive($sortColumn): bool {
+        if(request()->has('sort')){
+            $sorts = explode(",", request()->get('sort'));
+            foreach ($sorts as $sort){
+                if(str_replace("-", "", $sort) == $sortColumn)
+                    return true;
+            }
+        }
+        return false;
     }
 
 
@@ -245,30 +245,56 @@ class SortableLink
      *
      * @return string
      */
-    private static function buildQueryString($queryParameters, $sortParameter, $direction)
-    {
+    private static function buildQueryString($queryParameters, $sortParameter, $direction): string {
         $checkStrlenOrArray = function ($element) {
             return is_array($element) ? $element : strlen($element);
         };
 
-        $persistParameters = array_filter(request()->except('sort', 'direction', 'page'), $checkStrlenOrArray);
-        $queryString       = http_build_query(array_merge($queryParameters, $persistParameters, [
-            'sort'      => $sortParameter,
-            'direction' => $direction,
-        ]));
+        $finalSorts = [];
+        $found = false;
+        if(request()->has("sort")) {
+            $sorts = explode(",", request()->get("sort"));
+            foreach ($sorts as $sort){
+                // sort already has asc, switch to desc
+                if($sort === $sortParameter) {
+                    $found = true;
+                    $finalSorts[] = "-" . $sortParameter;
+                }
+                // sort already has desc, unset
+                else if($sorts === "-" . $sortParameter) {
+                    $found = true;
+                }
+                // not this sort column
+                else {
+                    $finalSorts[] = $sort;
+                }
+            }
+        }
 
-        return $queryString;
+        // add initial asc sort
+        if(!$found){
+            $finalSorts[] = $sortParameter;
+        }
+
+        $persistParameters = array_filter(request()->except('sort', 'page'), $checkStrlenOrArray);
+
+        if(count($finalSorts) > 0){
+            return http_build_query(array_merge($queryParameters, $persistParameters, [
+                'sort' => implode(",", $finalSorts),
+            ]));
+        } else {
+            return http_build_query(array_merge($queryParameters, $persistParameters));
+        }
     }
 
 
-    private static function buildAnchorAttributesString($anchorAttributes)
-    {
+    private static function buildAnchorAttributesString($anchorAttributes): string {
         if (empty($anchorAttributes)) {
             return '';
         }
 
         unset($anchorAttributes['href']);
-        
+
         $attributes = [];
         foreach ($anchorAttributes as $k => $v) {
             $attributes[] = $k.('' != $v ? '="'.$v.'"' : '');
